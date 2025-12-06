@@ -1,6 +1,5 @@
-# ARElight-server 0.25.1
+# ARElight-server
 ![](https://img.shields.io/badge/Python-3.9-brightgreen.svg)
-
 
 This project represent an accessible Web GUI for the
 [ARElight](https://github.com/nicolay-r/ARElight/tree/v0.25.1) system, powered by [Flask](https://flask.palletsprojects.com/en/stable/).
