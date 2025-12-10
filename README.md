@@ -1,14 +1,18 @@
-# ARElight-server
+# ARE-d3js
 ![](https://img.shields.io/badge/Python-3.9-brightgreen.svg)
 
-This project represent an accessible Web GUI for the
-[ARElight](https://github.com/nicolay-r/ARElight/tree/v0.25.1) system, powered by [Flask](https://flask.palletsprojects.com/en/stable/).
+A [D3.js GUI](https://d3js.org/) for Information Retrieval and Visualization of Extracted Relations.
+
+**Stack:**
+* [Flask](https://flask.palletsprojects.com/en/stable/) -- web server
+* [ARElight](https://github.com/nicolay-r/ARElight/tree/v0.25.1) -- AI / NLP backend 🤖
+    * [nlp-thidgate](https://github.com/nicolay-r/nlp-thirdgate) -- providers for NLP components 📦️
 
 <img width="1024" alt="interface" src="https://github.com/user-attachments/assets/552c78ae-5b49-4778-8070-10b913ebcf30" />
 
 # Installation
 
-You have to first install project dependencies: 
+Clone project and install dependencies:
 ```bash
 pip install -r dependencies.txt
 ```
