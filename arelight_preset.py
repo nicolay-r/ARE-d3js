@@ -1,6 +1,6 @@
 CONSTANT_INFER_PARAMS = {
     "sampling_framework": "arekit",
-    "bert_framework": "opennre",
+    "inference_framework": "bulk_chain",
     "ner_framework": "deeppavlov",
     "collection_name": None,
     "backend": "d3js_graphs",

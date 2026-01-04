@@ -1,4 +1,5 @@
 arelight @ git+https://github.com/nicolay-r/arelight@v0.25.1
+bulk_chain @ git+https://github.com/nicolay-r/bulk-chain@master
 flask
 flask_cors
 sh
