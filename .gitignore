@@ -5,3 +5,4 @@ venv/
 output/
 __pycache__/
 .env
+*.log
