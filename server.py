@@ -12,7 +12,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 
-from arelight.api import create_inference_pipeline, iter_rows_from_files
+from arelight.api import create_inference_pipeline
 from arelight.arekit.sample_service import AREkitSamplesService
 from arelight.backend.d3js.relations_graph_operations import OP_DIFFERENCE, OP_INTERSECTION, OP_UNION
 from arelight.backend.d3js.utils_graph import load_graph
@@ -20,7 +20,10 @@ from arelight.pipelines.demo.labels.formatter import CustomLabelsFormatter
 from arelight.pipelines.items.backend_d3js_operations import D3jsGraphOperationsBackendPipelineItem
 from arelight.pipelines.result import PipelineResult
 from arelight.run.infer import create_infer_parser
-from arelight.run.utils import attitude_task_kwargs, merge_dictionaries
+from arelight.run.utils import merge_dictionaries
+
+from demo.attitude import attitude_task_kwargs
+from demo.rows import iter_rows_from_files
 from arelight.run.utils_logger import TqdmToLogger, setup_custom_logger
 
 from arelight_preset import CONSTANT_INFER_IGNORE_PARAMS, CONSTANT_INFER_PARAMS, PROVIDERS_DIR, UI_INFER_PRESETS
@@ -344,6 +347,16 @@ def run_inference(filepath, options, progress=None):
             tqdm_log_out=TqdmToLogger(logger),
             batch_size=_opt_int(options, "batch_size", 1),
         )
+
+        label_names = consts["d3js_label_names"]
+        label_fmt = {a: v for a, v in map(lambda item: item.split(":"), label_names.split(","))}
+        settings.append({
+            "labels_formatter": CustomLabelsFormatter(**label_fmt),
+            "d3js_collection_name": collection_name,
+            "d3js_collection_description": collection_name,
+            "d3js_graph_output_dir": output_dir,
+        })
+
         report("Sampling and inference")
         BasePipelineLauncher.run(
             pipeline=pipeline,

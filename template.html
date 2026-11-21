@@ -440,7 +440,7 @@
                             appendProgress(payload.message);
                         } else if (eventName === "completed") {
                             appendProgress("Completed " + payload.collection);
-                            updateListOfFiles();
+                            showCompletedDataset(payload.collection);
                         } else if (eventName === "error") {
                             appendProgress(payload.error);
                         }
@@ -515,7 +515,11 @@
             .then(response => response.json())
             .then(data => {
                 console.log('Success:', data);
-                updateListOfFiles();
+                if (data && data.name) {
+                    showCompletedDataset(data.name);
+                } else {
+                    updateListOfFiles();
+                }
             })
             .catch((error) => {
                 console.error('Error:', error);
@@ -549,14 +553,30 @@
     // LOAD FILES INTO SELECTORS & VISUALISATION TRIGGERS
     //////////////////////////////////////////////////////////////////////////////
     function showFileDetails() {
-        REQUEST_DATA("file_status?file=" + document.getElementById('file_selector').value, (data) => {
-            details = data.data;
-            document.getElementById('file_details').innerText = JSON.stringify(details, null, 2);
-            visualise()
+        var name = document.getElementById('file_selector').value;
+        if (!name) {
+            return;
+        }
+        visualise(name);
+        REQUEST_DATA("file_status?file=" + encodeURIComponent(name), (data) => {
+            document.getElementById('file_details').innerText = JSON.stringify(data.data, null, 2);
         });
     }
 
-    function updateListOfFiles() {
+    function showCompletedDataset(name) {
+        if (!name) {
+            return;
+        }
+        previous_dataset = "";
+        settings_btn(document.getElementById("vis_settings"));
+        updateListOfFiles(name);
+        var canvas = document.getElementById("svg_container");
+        if (canvas && canvas.scrollIntoView) {
+            canvas.scrollIntoView({block: "nearest"});
+        }
+    }
+
+    function updateListOfFiles(selectedName) {
         REQUEST_DATA('available_files', (data) => {
             const statusElement = document.getElementById('file_selector');
             const statusElement_A = document.getElementById('file_selector_operations_A');
@@ -565,12 +585,16 @@
             if (statusElement) {
                 res = ""
                 for (var i = 0; i < data.length; i++) {
-                    res += "<option>" + data[i] + "</option>>"
+                    var selected = data[i] === selectedName ? " selected" : "";
+                    res += "<option" + selected + ">" + data[i] + "</option>"
                 }
                 statusElement.innerHTML = res;
                 statusElement_A.innerHTML = res;
                 statusElement_B.innerHTML = res;
                 // statusElement_Animation.innerHTML = res;
+                if (selectedName) {
+                    statusElement.value = selectedName;
+                }
             }
             showFileDetails()
         });
@@ -691,7 +715,7 @@
     document.querySelector('#radial_BTN').classList.remove('disabled');
     document.querySelector('#force_BTN').classList.remove('disabled');
     document.querySelector('#force_BTN').classList.add('disabled');
-    const folder_with_datasets_path = "http://127.0.0.1:<---SERVER-PORT--->/"
+    const folder_with_datasets_path = ""
     let previous_dataset = ""
     const optimal_numer_of_nodes = 50
     const optimal_numer_of_links = 1000
@@ -714,8 +738,11 @@
         draw_radial(dataset_name)
     }
 
-    function visualise() {
-        let selected_dataset = document.getElementById("file_selector").value;
+    function visualise(datasetName) {
+        let selected_dataset = datasetName || document.getElementById("file_selector").value;
+        if (!selected_dataset) {
+            return;
+        }
         if (selected_vis === "force") {
             draw_force(selected_dataset)
         } else {
@@ -862,11 +889,28 @@
         return array
     }
 
+    function nodeFillOpacity(weight) {
+        var value = Number(weight);
+        if (!isFinite(value) || value <= 0) {
+            return 0.55;
+        }
+        if (value <= 1) {
+            return Math.max(value, 0.45);
+        }
+        return Math.min(1, 0.35 + value / 17249);
+    }
+
     function draw_force(dataset_name) {
-        d3.select("svg").remove()
         let draw_parameters = get_draw_parameters();
 
-        d3.json(folder_with_datasets_path + "/get_force_data?file=" + dataset_name, function (error, graph) {
+        d3.json(folder_with_datasets_path + "/get_force_data?file=" + encodeURIComponent(dataset_name), function (error, graph) {
+            if (error || !graph || !graph.nodes) {
+                return;
+            }
+            if (document.getElementById("file_selector").value !== dataset_name) {
+                return;
+            }
+            d3.select("svg").remove()
 
             console.log("previous & new datasets:", previous_dataset, dataset_name)
             if (previous_dataset === dataset_name) {
@@ -1014,7 +1058,7 @@
             node.append("circle")
                 .attr("r", d => 10)
                 .attr("fill", d => "black")
-                .attr('fill-opacity', d => d.c / 17249)
+                .attr('fill-opacity', d => nodeFillOpacity(d.c))
 
             node.append("text")
                 .text(d => d.id);
@@ -1119,7 +1163,9 @@
         let selectedNodeId = -1;
 
         d3.json(folder_with_datasets_path + "/get_radial_data?file=" + dataset_name, function (error, classes) {
-            if (error) throw error;
+            if (error || !classes) {
+                return;
+            }
 
             classes = filterNodes(classes, draw_parameters[6])
             classes = filterLinksRadial(classes)
