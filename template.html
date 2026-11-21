@@ -903,7 +903,7 @@
     function draw_force(dataset_name) {
         let draw_parameters = get_draw_parameters();
 
-        d3.json(folder_with_datasets_path + "/get_force_data?file=" + encodeURIComponent(dataset_name), function (error, graph) {
+        d3.json(folder_with_datasets_path + "/get_graph_data?layout=force&file=" + encodeURIComponent(dataset_name), function (error, graph) {
             if (error || !graph || !graph.nodes) {
                 return;
             }
@@ -1162,7 +1162,7 @@
         let selectionState = "none";
         let selectedNodeId = -1;
 
-        d3.json(folder_with_datasets_path + "/get_radial_data?file=" + dataset_name, function (error, classes) {
+        d3.json(folder_with_datasets_path + "/get_graph_data?layout=radial&file=" + encodeURIComponent(dataset_name), function (error, classes) {
             if (error || !classes) {
                 return;
             }
@@ -1336,7 +1336,7 @@
                             });
                         }
                     });
-                    d3.json(folder_with_datasets_path + "/get_force_data?file=" + dataset_name, function (error, graph) {
+                    d3.json(folder_with_datasets_path + "/get_graph_data?layout=force&file=" + encodeURIComponent(dataset_name), function (error, graph) {
                         getDetails(visibleLinks, draw_parameters, graph.basis).then(data => {
                         }).catch(err => console.log(err));
                     })

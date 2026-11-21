@@ -73,8 +73,9 @@ class TestFastAPIServer(unittest.TestCase):
         self.assertIn("Эммануэль Макрон", response.text)
         self.assertIn(">Upload<", response.text)
         self.assertIn("/stream-with-post", response.text)
-        self.assertIn('"/get_force_data?file="', response.text)
-        self.assertNotIn("//get_force_data", response.text)
+        self.assertIn('"/get_graph_data?layout=force&file="', response.text)
+        self.assertIn('"/get_graph_data?layout=radial&file="', response.text)
+        self.assertNotIn("//get_graph_data", response.text)
         self.assertIn("showCompletedDataset(payload.collection)", response.text)
         self.assertIn("import_progress", response.text)
         self.assertIn('name="inference_api"', response.text)
@@ -164,14 +165,14 @@ class TestFastAPIServer(unittest.TestCase):
         self.assertEqual(response.json()["status"], "completed")
         self.assertEqual(response.json()["name"], "alpha_beta")
 
-        graph = self.client.get("/get_force_data", params={"file": "alpha_beta"})
+        graph = self.client.get("/get_graph_data", params={"layout": "force", "file": "alpha_beta"})
         self.assertEqual(graph.status_code, 200, graph.text)
         body = graph.json()
         link_targets = {link["target"] for link in body["links"]}
         self.assertIn("ORG.UN", link_targets)
         self.assertIn("LOC.Paris", link_targets)
 
-        radial = self.client.get("/get_radial_data", params={"file": "alpha_beta"})
+        radial = self.client.get("/get_graph_data", params={"layout": "radial", "file": "alpha_beta"})
         self.assertEqual(radial.status_code, 200)
         self.assertIsInstance(radial.json(), list)
 

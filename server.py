@@ -17,7 +17,8 @@ from arelight.arekit.sample_service import AREkitSamplesService
 from arelight.backend.d3js.relations_graph_operations import OP_DIFFERENCE, OP_INTERSECTION, OP_UNION
 from arelight.backend.d3js.utils_graph import load_graph
 from arelight.pipelines.demo.labels.formatter import CustomLabelsFormatter
-from arelight.pipelines.items.backend_d3js_operations import D3jsGraphOperationsBackendPipelineItem
+from demo.d3js_graphs import D3jsGraphsBackendPipelineItem
+from demo.d3js_operations import D3jsGraphOperationsBackendPipelineItem
 from arelight.pipelines.result import PipelineResult
 from arelight.run.infer import create_infer_parser
 from arelight.run.utils import merge_dictionaries
@@ -338,15 +339,13 @@ def run_inference(filepath, options, progress=None):
                 "writer": _opt(options, "inference_writer", "sqlite3"),
                 "task_kwargs": attitude_task_kwargs(consts["labels_fmt"]),
             },
-            backend_args={
-                "label_names": consts["d3js_label_names"],
-                "collection_name": collection_name,
-                "description": collection_name,
-                "output_dir": output_dir,
-            },
             tqdm_log_out=TqdmToLogger(logger),
             batch_size=_opt_int(options, "batch_size", 1),
         )
+        pipeline += [
+            D3jsGraphsBackendPipelineItem(graph_min_links=1, weights=True),
+            D3jsGraphOperationsBackendPipelineItem(),
+        ]
 
         label_names = consts["d3js_label_names"]
         label_fmt = {a: v for a, v in map(lambda item: item.split(":"), label_names.split(","))}
@@ -400,35 +399,35 @@ async def get_all_file_names():
     return list(map(basename, get_all_data_status().keys()))
 
 
-@app.api_route("/get_force_data", methods=["GET", "POST"])
-async def get_force_data(request: Request, file: str = None):
-    file_name = file or request.query_params.get("file")
-    if request.method == "POST":
-        payload = await request.json()
-        file_name = payload.get("file")
-        loaded = _load_graph_response(SETTINGS["path_to_force_data"], file_name)
-        if isinstance(loaded, JSONResponse):
-            return loaded
-        return {"graph": loaded}
-    loaded = _load_graph_response(SETTINGS["path_to_force_data"], file_name)
-    if loaded is None:
-        return {"graph": {"nodes": [{"id": "DATASET NOT EXIST", "c": 1}], "links": []}}
-    return loaded
+_GRAPH_LAYOUTS = {
+    "force": "path_to_force_data",
+    "radial": "path_to_radial_data",
+}
+
+_GRAPH_MISSING = {
+    "force": {"graph": {"nodes": [{"id": "DATASET NOT EXIST", "c": 1}], "links": []}},
+    "radial": [{"w": 0.5, "imports": [], "name": "DATASET NOT EXIST"}],
+}
 
 
-@app.api_route("/get_radial_data", methods=["GET", "POST"])
-async def get_radial_data(request: Request, file: str = None):
+@app.api_route("/get_graph_data", methods=["GET", "POST"])
+async def get_graph_data(request: Request, file: str = None, layout: str = None):
     file_name = file or request.query_params.get("file")
+    layout = layout or request.query_params.get("layout")
     if request.method == "POST":
         payload = await request.json()
-        file_name = payload.get("file")
-        loaded = _load_graph_response(SETTINGS["path_to_radial_data"], file_name)
-        if isinstance(loaded, JSONResponse):
-            return loaded
-        return {"graph": loaded}
-    loaded = _load_graph_response(SETTINGS["path_to_radial_data"], file_name)
+        file_name = payload.get("file", file_name)
+        layout = payload.get("layout", layout)
+    folder_key = _GRAPH_LAYOUTS.get(layout)
+    if folder_key is None:
+        return JSONResponse({"error": "Unknown layout"}, status_code=400)
+    loaded = _load_graph_response(SETTINGS[folder_key], file_name)
+    if isinstance(loaded, JSONResponse):
+        return loaded
     if loaded is None:
-        return [{"w": 0.5, "imports": [], "name": "DATASET NOT EXIST"}]
+        return _GRAPH_MISSING[layout]
+    if request.method == "POST":
+        return {"graph": loaded}
     return loaded
 
 
