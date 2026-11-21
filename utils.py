@@ -1,4 +1,3 @@
-import os
 from os.path import dirname, realpath
 
 from argparse_to_json import convert_parser_to_json
@@ -45,12 +44,3 @@ def setup_preset(predefined_args, preset, ignored_params):
             options.insert(0, v)
         if "field" in target:
             target["field"] = v
-
-
-def iter_last_n_lines(filepath, n):
-    if not os.path.exists(filepath):
-        return
-    with open(filepath, "r", errors="replace") as handle:
-        lines = handle.readlines()
-    for line in lines[-n:]:
-        yield line.rstrip("\n")

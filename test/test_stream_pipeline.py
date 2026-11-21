@@ -11,7 +11,7 @@ sys.path.insert(0, WEB_ROOT)
 
 from dotenv import load_dotenv
 
-load_dotenv(join(WEB_ROOT, ".env"))
+load_dotenv(join(WEB_ROOT, "demo", ".env"))
 
 import server
 from arelight_preset import UI_INFER_PRESETS
@@ -30,7 +30,6 @@ class TestStreamPipeline(unittest.TestCase):
         output = join(root, "output")
         self._saved = {
             "data_status_file": server.data_status_file,
-            "log_file": server.SETTINGS["arelight_const_args"]["log_file"],
             "settings": {
                 "path_to_raw_data": server.SETTINGS["path_to_raw_data"],
                 "path_to_force_data": server.SETTINGS["path_to_force_data"],
@@ -43,7 +42,6 @@ class TestStreamPipeline(unittest.TestCase):
         server.SETTINGS["path_to_force_data"] = join(output, "force")
         server.SETTINGS["path_to_radial_data"] = join(output, "radial")
         server.SETTINGS["arelight_const_args"]["output_template"] = output
-        server.SETTINGS["arelight_const_args"]["log_file"] = join(root, "arelight.log")
         os.makedirs(server.SETTINGS["path_to_raw_data"], exist_ok=True)
         self._output = output
 
@@ -53,7 +51,6 @@ class TestStreamPipeline(unittest.TestCase):
         server.SETTINGS["path_to_force_data"] = self._saved["settings"]["path_to_force_data"]
         server.SETTINGS["path_to_radial_data"] = self._saved["settings"]["path_to_radial_data"]
         server.SETTINGS["arelight_const_args"]["output_template"] = self._saved["settings"]["output_template"]
-        server.SETTINGS["arelight_const_args"]["log_file"] = self._saved["log_file"]
         self._tmpdir.cleanup()
 
     def test_run_inference_builds_graphs(self):

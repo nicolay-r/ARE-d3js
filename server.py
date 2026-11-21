@@ -2,7 +2,7 @@ import asyncio
 import json
 import logging
 import os
-from os.path import basename, dirname, join
+from os.path import basename, join
 from threading import Lock
 
 from arekit.common.pipeline.base import BasePipelineLauncher
@@ -25,18 +25,19 @@ from arelight.run.utils import merge_dictionaries
 
 from demo.attitude import attitude_task_kwargs
 from demo.rows import iter_rows_from_files
-from arelight.run.utils_logger import TqdmToLogger, setup_custom_logger
+from arelight.run.utils_logger import TqdmToLogger
 
 from arelight_preset import CONSTANT_INFER_IGNORE_PARAMS, CONSTANT_INFER_PARAMS, PROVIDERS_DIR, UI_INFER_PRESETS
 from utils import CUR_DIR, do_format, extract, setup_preset
 
 
-load_dotenv(join(CUR_DIR, ".env"))
+DEMO_DIR = join(CUR_DIR, "demo")
+load_dotenv(join(DEMO_DIR, ".env"))
 
-data_status_file = join(CUR_DIR, "data_status.json")
 PREDICT_TABLE = "bulk_chain"
 _status_lock = Lock()
 _OUTPUT_DIR = join(CUR_DIR, CONSTANT_INFER_PARAMS["output_template"])
+data_status_file = join(_OUTPUT_DIR, "data_status.json")
 
 SETTINGS = {
     "path_to_raw_data": join(CUR_DIR, "raw_data"),
@@ -48,8 +49,21 @@ SETTINGS = {
         for k, v in extract(create_infer_parser(), args=[])["schema"].items()
         if k not in CONSTANT_INFER_PARAMS and k not in CONSTANT_INFER_IGNORE_PARAMS
     },
-    "port": json.load(open(data_status_file, "r"))["server"]["port"],
+    "port": None,
 }
+
+
+def _ensure_data_status():
+    os.makedirs(_OUTPUT_DIR, exist_ok=True)
+    if os.path.isfile(data_status_file):
+        return
+    with open(data_status_file, "w") as handle:
+        json.dump({"server": {"port": 8000}, "data": {}}, handle, indent=4)
+
+
+_ensure_data_status()
+with open(data_status_file, "r") as handle:
+    SETTINGS["port"] = json.load(handle)["server"]["port"]
 
 setup_preset(predefined_args=SETTINGS["arelight_args"], preset=UI_INFER_PRESETS["russian"],
              ignored_params=CONSTANT_INFER_IGNORE_PARAMS)
@@ -166,15 +180,8 @@ def generate_ARELIGHT_PARAMETERS():
     return html_code
 
 
-def __get_log_filepath():
-    log_file = SETTINGS["arelight_const_args"]["log_file"]
-    if os.path.isabs(log_file):
-        return log_file
-    return join(CUR_DIR, log_file)
-
-
 def __read_template(name):
-    with open(join(CUR_DIR, name), "r") as handle:
+    with open(join(DEMO_DIR, name), "r") as handle:
         return handle.read()
 
 
@@ -284,7 +291,8 @@ def run_inference(filepath, options, progress=None):
 
         logger = logging.getLogger("arelight")
         logger.handlers.clear()
-        logger = setup_custom_logger(name="arelight", filepath=__get_log_filepath())
+        logger.setLevel(logging.INFO)
+        logger.propagate = False
         if progress is not None:
             logger.addHandler(_ProgressLogHandler(progress))
         report("Running {0}".format(collection_name))
@@ -587,10 +595,5 @@ async def upload_file(request: Request):
 
 if __name__ == "__main__":
     import uvicorn
-
-    log_path = __get_log_filepath()
-    os.makedirs(dirname(log_path) or ".", exist_ok=True)
-    with open(log_path, "w") as handle:
-        handle.write("")
 
     uvicorn.run(app, host="127.0.0.1", port=int(SETTINGS["port"]))

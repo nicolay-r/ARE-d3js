@@ -8,13 +8,12 @@ CONSTANT_INFER_PARAMS = {
     "inference_framework": "bulk_chain",
     "collection_name": None,
     "backend": "d3js_graphs",
-    "log_file": "arelight.log",
     "output_template": "output",
     "labels_fmt": "u:0,p:1,n:2",
     "d3js_label_names": "p:pos,n:neg,u:neu",
 }
 
-CONSTANT_INFER_IGNORE_PARAMS = {"from_files", "device_type"}
+CONSTANT_INFER_IGNORE_PARAMS = {"from_files", "device_type", "log_file"}
 
 UI_INFER_PRESETS = {
     "russian": {
