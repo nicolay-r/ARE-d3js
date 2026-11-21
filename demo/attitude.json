@@ -1,0 +1,14 @@
+{
+    "labels_fmt": "u:0,p:1,n:2",
+    "schema": [
+        {
+            "prompt": "Given text: {text_a}TASK: Classify sentiment attitude of [SUBJECT] to [OBJECT]: positive, negative, neutral.",
+            "out": "response"
+        }
+    ],
+    "classes": [
+        {"contains": "positive", "value": 1},
+        {"contains": "negative", "value": -1}
+    ],
+    "default": 0
+}

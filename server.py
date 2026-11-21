@@ -23,7 +23,6 @@ from arelight.pipelines.result import PipelineResult
 from arelight.run.infer import create_infer_parser
 from arelight.run.utils import merge_dictionaries
 
-from demo.attitude import attitude_task_kwargs
 from demo.rows import iter_rows_from_files
 from arelight.run.utils_logger import TqdmToLogger
 
@@ -100,6 +99,18 @@ def _opt_int(options, key, default=None):
     if value is None:
         return default
     return int(value)
+
+
+with open(join(DEMO_DIR, "attitude.json"), encoding="utf-8") as handle:
+    _ATTITUDE = json.load(handle)
+
+
+def _classify_attitude(row):
+    lowered = "" if row is None else str(row).lower()
+    for item in _ATTITUDE["classes"]:
+        if item["contains"] in lowered:
+            return item["value"]
+    return _ATTITUDE["default"]
 
 
 _API_PLACEHOLDERS = {"API_TOKEN", "${API_TOKEN}"}
@@ -345,7 +356,11 @@ def run_inference(filepath, options, progress=None):
                 "class_name": provider_path(_opt(options, "inference_filename")),
                 "api_key": inference_api_key(options),
                 "writer": _opt(options, "inference_writer", "sqlite3"),
-                "task_kwargs": attitude_task_kwargs(consts["labels_fmt"]),
+                "task_kwargs": {
+                    "schema": _ATTITUDE["schema"],
+                    "classify_func": _classify_attitude,
+                    "labels_fmt": _ATTITUDE["labels_fmt"],
+                },
             },
             tqdm_log_out=TqdmToLogger(logger),
             batch_size=_opt_int(options, "batch_size", 1),
