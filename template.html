@@ -145,15 +145,18 @@
 
                 <div id="new_data_div">
                     <div>
-                        <h4>Upload new data to ARElight:</h4>
+                        <h4>Import text</h4>
                     </div>
-                    <form method=post enctype=multipart/form-data>
-                        <div>
-                            <input type=file name=file id="file" onchange="checkFileSelected()" lang="en"><br><br>
+                    <form id="import_form" method="post" enctype="multipart/form-data" onsubmit="return submitImport(event)">
+                        <small class="form-text text-muted">Write text or attach a file. A file replaces the text.</small>
+                        <textarea class="form-control" name="text" id="import_text" rows="8" oninput="checkImportReady()">Такие страны, как Франция и Германия, зациклились на наивных мифах о Евросоюзе как о мощной военной силе. Но на деле ЕС не в силах обеспечить безопасность континента. События на Украине показали, что он нуждается в США и Британии. Президент Франции Эммануэль Макрон считает, что у альянса наступила "смерть мозга", и полагает, что обороной Европы должен заниматься ЕС.</textarea>
+                        <div style="margin-top: 8px;">
+                            <input type="file" name="file" id="file" class="form-control" onchange="checkImportReady()" lang="en">
                         </div>
-                        <div>
-                            <input id="submit_data_BTN" type=submit value=Upload disabled lang="en">
-                        </div>
+                        <small class="form-text text-muted">Dataset name for pasted text:</small>
+                        <input type="text" class="form-control" name="dataset_name" id="dataset_name" value="example">
+                        <button id="submit_data_BTN" type="submit" class="btn btn-warning" style="margin-top: 8px; width: 100%;">Upload</button>
+                        <pre id="import_progress" style="border: 1px solid lightgrey; min-height: 4em; max-height: 12em; overflow: auto; white-space: pre-wrap; font-size: 11px; margin-top: 8px;"></pre>
                         <hr>
                         <div>
                             <h4>ARElight settings:</h4>
@@ -384,14 +387,87 @@
         alert("Please use Google Chrome for the best experience. Some functions may not work in Safari, Edge and other browsers.");
     }
 
-    function checkFileSelected() {
+    function checkImportReady() {
         var fileInput = document.getElementById('file');
+        var textInput = document.getElementById('import_text');
         var submitButton = document.getElementById('submit_data_BTN');
-        if (fileInput.files.length > 0) {
-            submitButton.disabled = false;
-        } else {
-            submitButton.disabled = true;
-        }
+        var hasFile = fileInput.files && fileInput.files.length > 0;
+        var hasText = textInput && textInput.value.trim().length > 0;
+        submitButton.disabled = !(hasFile || hasText);
+    }
+
+    function appendProgress(line) {
+        var box = document.getElementById('import_progress');
+        box.textContent += (box.textContent ? "\n" : "") + line;
+        box.scrollTop = box.scrollHeight;
+    }
+
+    function submitImport(event) {
+        event.preventDefault();
+        var form = document.getElementById('import_form');
+        var submitButton = document.getElementById('submit_data_BTN');
+        var progress = document.getElementById('import_progress');
+        progress.textContent = "";
+        submitButton.disabled = true;
+
+        fetch("/stream-with-post", {method: "POST", body: new FormData(form)})
+            .then(function (response) {
+                if (!response.ok || !response.body) {
+                    throw new Error("Request failed");
+                }
+                var reader = response.body.getReader();
+                var decoder = new TextDecoder();
+                var pending = "";
+
+                function takeEvents() {
+                    var blocks = pending.split("\n\n");
+                    pending = blocks.pop();
+                    blocks.forEach(function (block) {
+                        var eventName = "message";
+                        var data = "";
+                        block.split("\n").forEach(function (line) {
+                            if (line.indexOf("event:") === 0) {
+                                eventName = line.slice(6).trim();
+                            } else if (line.indexOf("data:") === 0) {
+                                data += line.slice(5).trim();
+                            }
+                        });
+                        if (!data) {
+                            return;
+                        }
+                        var payload = JSON.parse(data);
+                        if (eventName === "progress") {
+                            appendProgress(payload.message);
+                        } else if (eventName === "completed") {
+                            appendProgress("Completed " + payload.collection);
+                            updateListOfFiles();
+                        } else if (eventName === "error") {
+                            appendProgress(payload.error);
+                        }
+                    });
+                }
+
+                function readMore() {
+                    return reader.read().then(function (result) {
+                        if (result.done) {
+                            pending += "\n\n";
+                            takeEvents();
+                            checkImportReady();
+                            return;
+                        }
+                        pending += decoder.decode(result.value, {stream: true});
+                        takeEvents();
+                        return readMore();
+                    });
+                }
+
+                return readMore();
+            })
+            .catch(function (error) {
+                appendProgress(String(error));
+                checkImportReady();
+            });
+        return false;
     }
 
     function getRandomSample(arr, sampleSize) {
@@ -439,6 +515,7 @@
             .then(response => response.json())
             .then(data => {
                 console.log('Success:', data);
+                updateListOfFiles();
             })
             .catch((error) => {
                 console.error('Error:', error);

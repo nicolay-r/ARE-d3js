@@ -3,3 +3,5 @@ data/
 raw_data/
 venv/
 output/
+__pycache__/
+.env
