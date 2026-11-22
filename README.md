@@ -5,7 +5,7 @@ A [D3.js GUI](https://d3js.org/) for Information Retrieval and Visualization of 
 
 **Stack:**
 * [FastAPI](https://fastapi.tiangolo.com/) -- web server
-* [ARElight](https://github.com/nicolay-r/ARElight/tree/v0.25.1) -- AI / NLP backend 🤖
+* [ARElight](https://github.com/nicolay-r/ARElight/tree/v0.26.1) -- AI / NLP backend 🤖
     * [nlp-thidgate](https://github.com/nicolay-r/nlp-thirdgate) -- providers for NLP components 📦️
 
 <img width="1024" alt="interface" src="https://github.com/user-attachments/assets/552c78ae-5b49-4778-8070-10b913ebcf30" />

@@ -113,16 +113,8 @@ def _classify_attitude(row):
     return _ATTITUDE["default"]
 
 
-_API_PLACEHOLDERS = {"API_TOKEN", "${API_TOKEN}"}
-
-
-def inference_api_key(options):
-    """ Form value wins. An empty field or the placeholder reads API_TOKEN from .env. """
-    value = _opt(options, "inference_api")
-    if isinstance(value, str) and value.strip() in _API_PLACEHOLDERS:
-        value = None
-    if value:
-        return value
+def inference_api_key():
+    """ API key from API_TOKEN in the environment, loaded from demo/.env. """
     token = os.environ.get("API_TOKEN")
     if token is None or token.strip() in ("", "None", "null"):
         return None
@@ -158,11 +150,6 @@ def stored_upload_name(filename):
 def generate_ARELIGHT_PARAMETERS():
     html_code = ""
     for parameter_name, parameter_info in SETTINGS["arelight_args"].items():
-        if parameter_name == "inference_api":
-            html_code += """
-            <small class="form-text text-muted">inference_api:</small>
-            <input class="form-control" type="text" name="inference_api" value="" placeholder="API_TOKEN" autocomplete="off">"""
-            continue
         if "const" in parameter_info:
             html_code += f"""
             <small class="form-text text-muted">{parameter_name}:</small>
@@ -354,7 +341,7 @@ def run_inference(filepath, options, progress=None):
             inference_args={
                 "model": _opt(options, "inference_model_name"),
                 "class_name": provider_path(_opt(options, "inference_filename")),
-                "api_key": inference_api_key(options),
+                "api_key": inference_api_key(),
                 "writer": _opt(options, "inference_writer", "sqlite3"),
                 "task_kwargs": {
                     "schema": _ATTITUDE["schema"],
@@ -563,7 +550,7 @@ async def stream_with_post(request: Request):
     file_path, stem, options = prepared
     stored = dict(options)
     if "inference_api" in stored:
-        stored["inference_api"] = "API_TOKEN" if inference_api_key(options) else ""
+        stored["inference_api"] = "API_TOKEN" if inference_api_key() else ""
     __set_data_status__(stem, {**stored, "data_status": "processing"})
 
     async def events():

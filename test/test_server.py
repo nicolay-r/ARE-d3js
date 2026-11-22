@@ -78,19 +78,13 @@ class TestFastAPIServer(unittest.TestCase):
         self.assertNotIn("//get_graph_data", response.text)
         self.assertIn("showCompletedDataset(payload.collection)", response.text)
         self.assertIn("import_progress", response.text)
-        self.assertIn('name="inference_api"', response.text)
-        self.assertIn('placeholder="API_TOKEN"', response.text)
         self.assertIn("text/html", response.headers["content-type"])
 
     def test_inference_api_reads_env_placeholder(self):
         previous = os.environ.get("API_TOKEN")
         os.environ["API_TOKEN"] = "test-token"
         try:
-            self.assertEqual(server.inference_api_key({}), "test-token")
-            self.assertEqual(server.inference_api_key({"inference_api": ""}), "test-token")
-            self.assertEqual(server.inference_api_key({"inference_api": "None"}), "test-token")
-            self.assertEqual(server.inference_api_key({"inference_api": "API_TOKEN"}), "test-token")
-            self.assertEqual(server.inference_api_key({"inference_api": "explicit-token"}), "explicit-token")
+            self.assertEqual(server.inference_api_key(), "test-token")
         finally:
             if previous is None:
                 os.environ.pop("API_TOKEN", None)

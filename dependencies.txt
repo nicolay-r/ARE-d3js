@@ -1,4 +1,4 @@
--e ../ARElight
+arelight==0.26.1
 bulk_chain @ git+https://github.com/nicolay-r/bulk-chain@master
 fastapi
 uvicorn
