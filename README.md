@@ -15,6 +15,7 @@ A [D3.js GUI](https://d3js.org/) for Information Retrieval and Visualization of 
 Clone project and install dependencies:
 ```bash
 pip install -r dependencies.txt
+pip install -r demo/dependencies.txt
 ```
 
 # Usage 
